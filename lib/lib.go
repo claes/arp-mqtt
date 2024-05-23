@@ -20,7 +20,7 @@ func CreateNicSession(nic string) *packet.Session {
 
 	s, err := packet.Config{
 		ProbeDeadline:   packet.DefaultProbeDeadline,
-		OfflineDeadline: time.Minute * 2,
+		OfflineDeadline: time.Minute * 10,
 		PurgeDeadline:   packet.DefaultPurgeDeadline}.
 		NewSession(nic)
 
