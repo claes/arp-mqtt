@@ -10,13 +10,6 @@ import (
 	lib "github.com/claes/arp-mqtt/lib"
 )
 
-var debug *bool
-
-func MainLoop(bridge lib.NicSessionMQTTBridge) {
-	for {
-	}
-}
-
 func printHelp() {
 	fmt.Println("Usage: arp-mqtt [OPTIONS]")
 	fmt.Println("Options:")
@@ -27,7 +20,7 @@ func main() {
 	nic := flag.String("nic", "wlo1", "Network interface")
 	mqttBroker := flag.String("broker", "tcp://localhost:1883", "MQTT broker URL")
 	help := flag.Bool("help", false, "Print help")
-	debug = flag.Bool("debug", false, "Debug logging")
+	debug := flag.Bool("debug", false, "Debug logging")
 	flag.Parse()
 
 	if *debug {
@@ -49,14 +42,13 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	slog.Info("Started")
-	go MainLoop(*bridge)
+	fmt.Println("Started")
+	go bridge.MainLoop()
 	<-c
-	// bridge.Controller.Close()
 
-	slog.Info("Shut down")
-	//bridge.CECConnection.Destroy()
-	slog.Info("Exit")
+	fmt.Println("Shut down")
+	bridge.Close()
+	fmt.Println("Exit")
 
 	os.Exit(0)
 }

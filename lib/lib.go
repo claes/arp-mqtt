@@ -3,6 +3,7 @@ package lib
 import (
 	"log/slog"
 	"strconv"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/irai/packet"
@@ -19,7 +20,7 @@ func CreateNicSession(nic string) *packet.Session {
 
 	s, err := packet.Config{
 		ProbeDeadline:   packet.DefaultProbeDeadline,
-		OfflineDeadline: packet.DefaultOfflineDeadline,
+		OfflineDeadline: time.Minute * 2,
 		PurgeDeadline:   packet.DefaultPurgeDeadline}.
 		NewSession(nic)
 
@@ -45,13 +46,11 @@ func CreateMQTTClient(mqttBroker string) mqtt.Client {
 }
 
 func NewNicSessionMQTTBridge(session *packet.Session, mqttClient mqtt.Client) *NicSessionMQTTBridge {
-
 	slog.Info("Creating NicSession-MQTT bridge")
 	bridge := &NicSessionMQTTBridge{
 		MQTTClient: mqttClient,
 		NicSession: session,
 	}
-	bridge.initialize()
 	slog.Info("NicSession-MQTT bridge initialized")
 	return bridge
 }
@@ -61,7 +60,11 @@ func (bridge *NicSessionMQTTBridge) PublishMQTT(topic string, message string, re
 	token.Wait()
 }
 
-func (bridge *NicSessionMQTTBridge) initialize() {
+func (bridge *NicSessionMQTTBridge) Close() {
+	bridge.NicSession.Close()
+}
+
+func (bridge *NicSessionMQTTBridge) MainLoop() {
 	go func() {
 		for {
 			notification := <-bridge.NicSession.C
@@ -74,13 +77,13 @@ func (bridge *NicSessionMQTTBridge) initialize() {
 	for {
 		n, _, err := bridge.NicSession.ReadFrom(buffer)
 		if err != nil {
-			slog.Debug("Error reading packet", "error", err)
+			//slog.Debug("Error reading packet", "error", err)
 			return
 		}
 
 		frame, err := bridge.NicSession.Parse(buffer[:n])
 		if err != nil {
-			slog.Debug("Parse error", "error", err)
+			//slog.Debug("Parse error", "error", err)
 			continue
 		}
 		bridge.NicSession.Notify(frame)
