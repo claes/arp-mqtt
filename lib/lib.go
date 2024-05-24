@@ -122,7 +122,7 @@ func (bridge *NicSessionMQTTBridge) PingLoop() {
 			pinger.OnRecv = func(pkt *probing.Packet) {
 				slog.Debug("Ping returned", "ip", pkt.IPAddr.String())
 				bridge.PublishMQTT("net/ip/"+pkt.IPAddr.String()+"/ping",
-					strconv.FormatInt(pkt.Rtt.Milliseconds(), 16), false)
+					strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
 			}
 			err = pinger.Run() // Blocks until finished.
 			if err != nil {
