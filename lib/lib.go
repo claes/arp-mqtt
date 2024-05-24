@@ -121,13 +121,16 @@ func (bridge *NicSessionMQTTBridge) PingLoop() {
 			pinger.Count = 1
 			pinger.OnRecv = func(pkt *probing.Packet) {
 				slog.Debug("Ping returned", "ip", addr.String())
+				bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping",
+					strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
 				bridge.PublishMQTT("net/ip/"+addr.String()+"/ping",
 					strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
 			}
-			pinger.OnRecvError = func(err error) {
-				slog.Debug("Ping error", "ip", addr.String())
-				bridge.PublishMQTT("net/ip/"+addr.String()+"/ping", "error", false)
-			}
+			// pinger.OnRecvError = func(err error) {
+			// 	slog.Debug("Ping error", "ip", addr.String())
+			// 	bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping", "error", false)
+			// 	bridge.PublishMQTT("net/ip/"+addr.String()+"/ping", "error", false)
+			// }
 			err = pinger.Run() // Blocks until finished.
 			if err != nil {
 				slog.Error("Error pinging", "addr", addr, "host", host)
