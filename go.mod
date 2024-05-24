@@ -9,9 +9,11 @@ require (
 )
 
 require (
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/irai/packet v0.4.0 // indirect
 	github.com/mdlayher/netx v0.0.0-20200512211805-669a06fde734 // indirect
+	github.com/prometheus-community/pro-bing v0.4.0 // indirect
 	github.com/vishvananda/netlink v1.1.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df // indirect
 	gitlab.com/golang-commonmark/puny v0.0.0-20191124015043-9f83538fa04f // indirect

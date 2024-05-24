@@ -8,11 +8,24 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/irai/packet"
 	"github.com/irai/packet/fastlog"
+	probing "github.com/prometheus-community/pro-bing"
 )
 
 type NicSessionMQTTBridge struct {
 	MQTTClient mqtt.Client
 	NicSession *packet.Session
+}
+
+func foo() {
+	pinger, err := probing.NewPinger("www.google.com")
+	if err != nil {
+		panic(err)
+	}
+	pinger.Count = 3
+	err = pinger.Run() // Blocks until finished.
+	if err != nil {
+		panic(err)
+	}
 }
 
 func CreateNicSession(nic string) *packet.Session {
@@ -65,14 +78,12 @@ func (bridge *NicSessionMQTTBridge) Close() {
 }
 
 func (bridge *NicSessionMQTTBridge) MainLoop() {
-	go func() {
-		for {
-			notification := <-bridge.NicSession.C
-			slog.Debug("Address notification", "notification", notification, "mac", notification.Addr.MAC.String())
-			bridge.PublishMQTT("net/mac/"+notification.Addr.MAC.String()+"/online", strconv.FormatBool(notification.Online), false)
-		}
-	}()
+	go bridge.NotificationLoop()
+	go bridge.PingLoop()
+	bridge.ReadLoop()
+}
 
+func (bridge *NicSessionMQTTBridge) ReadLoop() {
 	buffer := make([]byte, packet.EthMaxSize)
 	for {
 		n, _, err := bridge.NicSession.ReadFrom(buffer)
@@ -87,5 +98,36 @@ func (bridge *NicSessionMQTTBridge) MainLoop() {
 			continue
 		}
 		bridge.NicSession.Notify(frame)
+	}
+}
+
+func (bridge *NicSessionMQTTBridge) NotificationLoop() {
+	for {
+		notification := <-bridge.NicSession.C
+		slog.Debug("Address notification", "notification", notification, "mac", notification.Addr.MAC.String())
+		bridge.PublishMQTT("net/mac/"+notification.Addr.MAC.String()+"/online", strconv.FormatBool(notification.Online), false)
+	}
+}
+
+func (bridge *NicSessionMQTTBridge) PingLoop() {
+	for {
+		time.Sleep(2 * time.Minute)
+		for addr, host := range bridge.NicSession.HostTable.Table {
+			slog.Debug("Pinging", "addr", addr, "host", host)
+			pinger, err := probing.NewPinger(addr.String())
+			if err != nil {
+				panic(err)
+			}
+			pinger.Count = 1
+			pinger.OnRecv = func(pkt *probing.Packet) {
+				slog.Debug("Ping returned", "ip", pkt.IPAddr.String())
+				bridge.PublishMQTT("net/ip/"+pkt.IPAddr.String()+"/ping",
+					strconv.FormatInt(pkt.Rtt.Milliseconds(), 16), false)
+			}
+			err = pinger.Run() // Blocks until finished.
+			if err != nil {
+				slog.Error("Error pinging", "addr", addr, "host", host)
+			}
+		}
 	}
 }

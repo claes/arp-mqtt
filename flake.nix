@@ -33,7 +33,7 @@
 
         src = ./.;
 
-        vendorHash = "sha256-wr6PYUPzmbPQTX9fob9iX87CybJRWVao0RlVzgyiU88=";
+        vendorHash = "sha256-DabGVGNX82YxQrx+YzlnOwA2iS+NeEaN1Qx1NtqgKxQ=";
       };
     });
 
