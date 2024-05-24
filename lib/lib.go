@@ -121,6 +121,7 @@ func (bridge *NicSessionMQTTBridge) PingLoop() {
 					continue
 				}
 				pinger.Count = 1
+				pinger.Timeout = time.Duration(2 * time.Second)
 				pinger.OnRecv = func(pkt *probing.Packet) {
 					slog.Debug("Ping returned", "ip", addr.String())
 					bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping",
