@@ -113,27 +113,30 @@ func (bridge *NicSessionMQTTBridge) PingLoop() {
 	for {
 		time.Sleep(2 * time.Minute)
 		for addr, host := range bridge.NicSession.HostTable.Table {
-			slog.Debug("Pinging", "addr", addr, "host", host)
-			pinger, err := probing.NewPinger(addr.String())
-			if err != nil {
-				panic(err)
-			}
-			pinger.Count = 1
-			pinger.OnRecv = func(pkt *probing.Packet) {
-				slog.Debug("Ping returned", "ip", addr.String())
-				bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping",
-					strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
-				bridge.PublishMQTT("net/ip/"+addr.String()+"/ping",
-					strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
-			}
-			// pinger.OnRecvError = func(err error) {
-			// 	slog.Debug("Ping error", "ip", addr.String())
-			// 	bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping", "error", false)
-			// 	bridge.PublishMQTT("net/ip/"+addr.String()+"/ping", "error", false)
-			// }
-			err = pinger.Run() // Blocks until finished.
-			if err != nil {
-				slog.Error("Error pinging", "addr", addr, "host", host)
+			if addr.Is4() {
+				slog.Debug("Pinging", "addr", addr, "host", host)
+				pinger, err := probing.NewPinger(addr.String())
+				if err != nil {
+					slog.Error("Could not create pinger", "addr", addr.String())
+					continue
+				}
+				pinger.Count = 1
+				pinger.OnRecv = func(pkt *probing.Packet) {
+					slog.Debug("Ping returned", "ip", addr.String())
+					bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping",
+						strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
+					bridge.PublishMQTT("net/ip/"+addr.String()+"/ping",
+						strconv.FormatInt(pkt.Rtt.Milliseconds(), 10), false)
+				}
+				// pinger.OnRecvError = func(err error) {
+				// 	slog.Debug("Ping error", "ip", addr.String())
+				// 	bridge.PublishMQTT("net/mac/"+host.Addr.MAC.String()+"/ping", "error", false)
+				// 	bridge.PublishMQTT("net/ip/"+addr.String()+"/ping", "error", false)
+				// }
+				err = pinger.Run() // Blocks until finished.
+				if err != nil {
+					slog.Error("Error pinging", "addr", addr, "host", host)
+				}
 			}
 		}
 	}
