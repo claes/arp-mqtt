@@ -12,8 +12,9 @@ import (
 )
 
 type NicSessionMQTTBridge struct {
-	MQTTClient mqtt.Client
-	NicSession *packet.Session
+	MQTTClient  mqtt.Client
+	NicSession  *packet.Session
+	TopicPrefix string
 }
 
 func foo() {
@@ -58,18 +59,19 @@ func CreateMQTTClient(mqttBroker string) mqtt.Client {
 	return client
 }
 
-func NewNicSessionMQTTBridge(session *packet.Session, mqttClient mqtt.Client) *NicSessionMQTTBridge {
+func NewNicSessionMQTTBridge(session *packet.Session, mqttClient mqtt.Client, topicPrefix string) *NicSessionMQTTBridge {
 	slog.Info("Creating NicSession-MQTT bridge")
 	bridge := &NicSessionMQTTBridge{
-		MQTTClient: mqttClient,
-		NicSession: session,
+		MQTTClient:  mqttClient,
+		NicSession:  session,
+		TopicPrefix: topicPrefix,
 	}
 	slog.Info("NicSession-MQTT bridge initialized")
 	return bridge
 }
 
-func (bridge *NicSessionMQTTBridge) PublishMQTT(topic string, message string, retained bool) {
-	token := bridge.MQTTClient.Publish(topic, 0, retained, message)
+func (bridge *NicSessionMQTTBridge) PublishMQTT(subtopic string, message string, retained bool) {
+	token := bridge.MQTTClient.Publish(bridge.TopicPrefix+"/"+subtopic, 0, retained, message)
 	token.Wait()
 }
 

@@ -19,6 +19,7 @@ func printHelp() {
 func main() {
 	nic := flag.String("nic", "wlo1", "Network interface")
 	mqttBroker := flag.String("broker", "tcp://localhost:1883", "MQTT broker URL")
+	topicPrefix := flag.String("topicPrefix", "tcp://localhost:1883", "MQTT topic prefix")
 	help := flag.Bool("help", false, "Print help")
 	debug := flag.Bool("debug", false, "Debug logging")
 	flag.Parse()
@@ -37,7 +38,7 @@ func main() {
 
 	s := lib.CreateNicSession(*nic)
 	defer s.Close()
-	bridge := lib.NewNicSessionMQTTBridge(s, lib.CreateMQTTClient(*mqttBroker))
+	bridge := lib.NewNicSessionMQTTBridge(s, lib.CreateMQTTClient(*mqttBroker), *topicPrefix)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
