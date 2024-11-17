@@ -3,6 +3,7 @@ package lib
 import (
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -70,8 +71,16 @@ func NewNicSessionMQTTBridge(session *packet.Session, mqttClient mqtt.Client, to
 	return bridge
 }
 
+func prefixify(topicPrefix, subtopic string) string {
+	if len(strings.TrimSpace(topicPrefix)) > 0 {
+		return topicPrefix + "/" + subtopic
+	} else {
+		return subtopic
+	}
+}
+
 func (bridge *NicSessionMQTTBridge) PublishMQTT(subtopic string, message string, retained bool) {
-	token := bridge.MQTTClient.Publish(bridge.TopicPrefix+"/"+subtopic, 0, retained, message)
+	token := bridge.MQTTClient.Publish(prefixify(bridge.TopicPrefix, subtopic), 0, retained, message)
 	token.Wait()
 }
 
